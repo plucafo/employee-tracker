@@ -34,13 +34,22 @@ function promptUser() {
     .prompt(questions)
     .then((answers) => {
       // Do stuff with answers here
-      db.query('SELECT * FROM employees', (err, rows) => {
-        if (err) {
-          console.error("Error querying database:", err);
-          return;
+      db.query(
+        `SELECT e1.id, e1.first_name, e1.last_name, e1.title,
+         r.title AS role, e1.salary,
+         CONCAT(e2.first_name, ' ', e2.last_name) AS manager
+         FROM employees e1
+         LEFT JOIN employees e2 ON e1.manager_id = e2.id
+         LEFT JOIN roles r ON e1.roles_id = r.id;`,
+        (err, rows) => {
+          if (err) {
+            console.error("Error querying database:", err);
+            return;
+          }
+          console.table(rows);
+          process.exit();
         }
-        console.table(rows);
-      }); // log the table for testing
+      ); // log the table for testing
     })
     .catch((error) => {
       console.error("Something went wrong:", error);
