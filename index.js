@@ -1,19 +1,17 @@
 const inquirer = require("inquirer");
-const db = require('./db');
-
-const questions = [
-  {
-    type: "list",
-    name: "start",
-    message: "What would you like to do?",
-    choices: ["View All Employees", "Add Employee", "Delete Employee"],
-  },
-];
+const db = require("./db");
 
 // Inquirer prompt function
 function promptUser() {
   inquirer
-    .prompt(questions)
+    .prompt([
+      {
+        type: "list",
+        name: "start",
+        message: "What would you like to do?",
+        choices: ["View All Employees", "Add Employee", "Delete Employee"],
+      },
+    ])
     .then((answers) => {
       // Do stuff with answers here
       switch (answers.start) {
@@ -35,7 +33,7 @@ function promptUser() {
     });
 }
 
-// FUNCTIONS TO BE MOVED TO DIFFERENT JS FILE LATER
+// Function to view all employees
 function viewAllEmployees() {
   db.query(
     `SELECT e1.id, e1.first_name, e1.last_name, e1.title,
@@ -69,14 +67,17 @@ function fetchRoles(callback) {
 
 // Function to fetch managers from the database
 function fetchManagers(callback) {
-  db.query(`SELECT id, CONCAT(first_name, ' ', last_name) AS manager_name FROM employees WHERE manager_id IS NULL`, (err, rows) => {
-    if (err) {
-      console.error("Error fetching managers:", err);
-      callback([]);
-      return;
+  db.query(
+    `SELECT id, CONCAT(first_name, ' ', last_name) AS manager_name FROM employees WHERE manager_id IS NULL`,
+    (err, rows) => {
+      if (err) {
+        console.error("Error fetching managers:", err);
+        callback([]);
+        return;
+      }
+      callback(rows);
     }
-    callback(rows);
-  });
+  );
 }
 
 // Function to prompt user for employee details and add the employee
@@ -104,7 +105,10 @@ function addEmployee() {
             type: "list",
             name: "roleId",
             message: "Select employee's role:",
-            choices: roles.map((role) => ({ name: role.title, value: role.id })),
+            choices: roles.map((role) => ({
+              name: role.title,
+              value: role.id,
+            })),
           },
           {
             type: "input",
@@ -115,21 +119,30 @@ function addEmployee() {
             type: "list",
             name: "managerId",
             message: "Select employee's manager:",
-            choices: managers.map((manager) => ({ name: manager.manager_name, value: manager.id })),
+            choices: managers.map((manager) => ({
+              name: manager.manager_name,
+              value: manager.id,
+            })),
           },
         ])
         .then((answers) => {
-          // Call db.query to add the employee
           db.query(
             `INSERT INTO employees (first_name, last_name, title, roles_id, salary, manager_id) VALUES (?, ?, ?, ?, ?, ?)`,
-            [answers.firstName, answers.lastName, answers.title, answers.roleId, answers.salary, answers.managerId],
+            [
+              answers.firstName,
+              answers.lastName,
+              answers.title,
+              answers.roleId,
+              answers.salary,
+              answers.managerId,
+            ],
             (err, result) => {
               if (err) {
                 console.error("Error adding employee:", err);
                 return;
               }
               console.log("Employee added successfully!");
-              promptUser(); // Optional: Prompt user again after adding employee
+              promptUser(); 
             }
           );
         })
