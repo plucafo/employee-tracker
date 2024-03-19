@@ -9,7 +9,7 @@ function promptUser() {
         type: "list",
         name: "start",
         message: "What would you like to do?",
-        choices: ["View All Employees", "Add Employee", "Delete Employee"],
+        choices: ["View All Employees", "Add Employee", "Delete Employee", "Update Employee Role", "View All Roles", "Add Role", "View All Departments", "Add Department", "Exit"],
       },
     ])
     .then((answers) => {
@@ -24,6 +24,12 @@ function promptUser() {
         case "Delete Employee":
           deleteEmployee();
           break;
+        case "Update Employee Role":
+          updateEmployeeRole();
+          break;
+        case "Exit":
+          console.log("Bye!")
+          process.exit();
         default:
           console.log("Invalid selection");
       }
@@ -48,7 +54,7 @@ function viewAllEmployees() {
         return;
       }
       console.table(rows);
-      process.exit();
+      promptUser();
     }
   );
 }
@@ -153,6 +159,7 @@ function addEmployee() {
   });
 }
 
+// Function to delete an employee
 function deleteEmployee() {
   // Fetch the list of employees from the database
   db.query(
@@ -206,5 +213,82 @@ function deleteEmployee() {
     }
   );
 }
+
+// Function to update an employees role
+function updateEmployeeRole() {
+  // Fetch the list of employees from the database
+  db.query(
+    `SELECT id, CONCAT(first_name, ' ', last_name) AS full_name FROM employees`,
+    (err, rows) => {
+      if (err) {
+        console.error("Error fetching employee list:", err);
+        promptUser();
+        return;
+      }
+
+      // Display the list of employees in a table format
+      console.table(rows);
+
+      // Extract the list of employee IDs from the fetched rows
+      const employeeIds = rows.map((employee) => employee.id);
+
+      // Fetch the list of roles from the database
+      db.query(`SELECT id, title FROM roles`, (err, roles) => {
+        if (err) {
+          console.error("Error fetching roles:", err);
+          promptUser();
+          return;
+        }
+
+        inquirer
+          .prompt([
+            {
+              type: "input",
+              name: "employeeId",
+              message: "Enter the ID of the employee you want to update:",
+            },
+            {
+              type: "list",
+              name: "roleId",
+              message: "Select the new role for the employee:",
+              choices: roles.map((role) => ({
+                name: role.title,
+                value: role.id,
+              })),
+            },
+          ])
+          .then((answers) => {
+            const employeeId = parseInt(answers.employeeId);
+            const roleId = parseInt(answers.roleId);
+
+            if (isNaN(employeeId) || !employeeIds.includes(employeeId)) {
+              console.log("Invalid employee ID. Please enter a valid number.");
+              updateEmployeeRole(); // Prompt user to enter employee ID and role again
+              return;
+            }
+
+            // Call db.query to update the employee's role
+            db.query(
+              `UPDATE employees SET roles_id = ? WHERE id = ?`,
+              [roleId, employeeId],
+              (err, result) => {
+                if (err) {
+                  console.error("Error updating employee role:", err);
+                  return;
+                }
+                console.log("Employee role updated successfully!");
+                promptUser(); // Optional: Prompt user again after updating employee role
+              }
+            );
+          })
+          .catch((error) => {
+            console.error("Something went wrong:", error);
+          });
+      });
+    }
+  );
+}
+
+
 
 promptUser();
