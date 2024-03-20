@@ -27,6 +27,12 @@ function promptUser() {
         case "Update Employee Role":
           updateEmployeeRole();
           break;
+        case "View All Roles":
+          viewAllRoles();
+          break;
+        case "View All Departments":
+          viewAllDepartments();
+          break;
         case "Exit":
           console.log("Bye!")
           process.exit();
@@ -289,6 +295,29 @@ function updateEmployeeRole() {
   );
 }
 
+// Function to view the roles table
+function viewAllRoles() {
+  db.query(`SELECT * FROM roles`, (err, rows) => {
+    if (err) {
+      console.error("Error querying database:", err);
+      return;
+    }
+    console.table(rows);
+    promptUser();
+  })
+}
+
+// Function to view the departments table
+function viewAllDepartments() {
+  db.query(`SELECT * FROM departments`, (err, rows) => {
+    if (err) {
+      console.error("Error querying database:", err);
+      return;
+    }
+    console.table(rows);
+    promptUser();
+  })
+}
 
 
 promptUser();
