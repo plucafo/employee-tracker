@@ -9,7 +9,17 @@ function promptUser() {
         type: "list",
         name: "start",
         message: "What would you like to do?",
-        choices: ["View All Employees", "Add Employee", "Delete Employee", "Update Employee Role", "View All Roles", "Add Role", "View All Departments", "Add Department", "Exit"],
+        choices: [
+          "View All Employees",
+          "Add Employee",
+          "Delete Employee",
+          "Update Employee Role",
+          "View All Roles",
+          "Add Role",
+          "View All Departments",
+          "Add Department",
+          "Exit",
+        ],
       },
     ])
     .then((answers) => {
@@ -30,11 +40,17 @@ function promptUser() {
         case "View All Roles":
           viewAllRoles();
           break;
+        case "Add Role":
+          addRole();
+          break;
         case "View All Departments":
           viewAllDepartments();
           break;
+        case "Add Department":
+          addDepartment();
+          break;
         case "Exit":
-          console.log("Bye!")
+          console.log("Bye!");
           process.exit();
         default:
           console.log("Invalid selection");
@@ -154,7 +170,7 @@ function addEmployee() {
                 return;
               }
               console.log("Employee added successfully!");
-              promptUser(); 
+              promptUser();
             }
           );
         })
@@ -304,7 +320,7 @@ function viewAllRoles() {
     }
     console.table(rows);
     promptUser();
-  })
+  });
 }
 
 // Function to view the departments table
@@ -316,8 +332,109 @@ function viewAllDepartments() {
     }
     console.table(rows);
     promptUser();
-  })
+  });
 }
 
+// Function to add a new role to the roles table
+function addRole() {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "roleName",
+        message: "Enter the name of the new role:",
+        validate: function (value) {
+          if (value.trim() === "") {
+            return "Role name cannot be empty. Please enter a valid role name.";
+          }
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "roleSalary",
+        message: "Enter the salary for the new role:",
+        validate: function (value) {
+          if (isNaN(value) || parseFloat(value) <= 0) {
+            return "Invalid salary. Please enter a valid number greater than 0.";
+          }
+          return true;
+        },
+      },
+      {
+        type: "list",
+        name: "departmentId",
+        message: "Select the department for the new role:",
+        choices: function () {
+          return new Promise((resolve, reject) => {
+            db.query(`SELECT id, name FROM departments`, (err, rows) => {
+              if (err) {
+                reject("Error fetching departments.");
+              } else {
+                resolve(
+                  rows.map((department) => ({
+                    name: department.name,
+                    value: department.id,
+                  }))
+                );
+              }
+            });
+          });
+        },
+      },
+    ])
+    .then((answers) => {
+      db.query(
+        `INSERT INTO roles (title, salary, departments_id) VALUES (?, ?, ?)`,
+        [answers.roleName, answers.roleSalary, answers.departmentId],
+        (err, result) => {
+          if (err) {
+            console.error("Error adding role:", err);
+            return;
+          }
+          console.log("Role added successfully!");
+          promptUser();
+        }
+      );
+    })
+    .catch((error) => {
+      console.error("Something went wrong:", error);
+    });
+}
+
+// Function to add a new department to the departments table
+function addDepartment() {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "departmentName",
+        message: "Enter the name of the new department:",
+        validate: function (value) {
+          if (value.trim() === "") {
+            return "Department name cannot be empty. Please enter a valid department name.";
+          }
+          return true;
+        },
+      },
+    ])
+    .then((answers) => {
+      db.query(
+        `INSERT INTO departments (name) VALUES (?)`,
+        [answers.departmentName],
+        (err, result) => {
+          if (err) {
+            console.error("Error adding department:", err);
+            return;
+          }
+          console.log("Department added successfully!");
+          promptUser();
+        }
+      );
+    })
+    .catch((error) => {
+      console.error("Something went wrong:", error);
+    });
+}
 
 promptUser();
